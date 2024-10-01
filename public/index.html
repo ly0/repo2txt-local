@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Code Repo to Plain Text Converter | Convert Code Repositories to Text</title>
+    <meta name="description" content="Convert Local repositories to plain text files easily. Our tool helps you transform code into a single formatted text file for better readability and analysis.">
+    <meta name="author" content="abinthomasonline">
+    <meta property="og:title" content="Local Repo to Plain Text Converter">
+    <meta property="og:description" content="Convert Local Repo repositories to plain text files easily. Transform code into a single formatted text file.">
+    <meta property="og:type" content="website">
+    <style>
+        .directory-checkbox + button:focus {
+            outline: none;
+        }
+        .directory-checkbox + button:hover {
+            color: #4a5568;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CYF86LN5WM"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-CYF86LN5WM');
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8 text-gray-600">
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 relative">
+    <a href="https://github.com/abinthomasonline/repo2txt" target="_blank" class="absolute top-2 right-2">
+        <i data-lucide="github" class="w-8 h-8 text-gray-600 hover:text-gray-800"></i>
+    </a>
+    <h1 class="text-3xl font-bold mb-2 text-center text-gray-600">Local Repo to Plain Text</h1>
+    <p class="text-lg text-center text-gray-500 mb-6">Convert Code in Local Repo to a Single Formatted Text File</p>
+    <form id="repoForm" class="space-y-4">
+        <div>
+            <label for="path" class="block text-sm font-medium text-gray-600">Subfolder Path:</label>
+            <input type="text" id="path" name="repoUrl" required class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 h-10 px-2">
+        </div>
+
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center">
+            <i data-lucide="folder-search" class="w-5 h-5 mr-2"></i>
+            Fetch Directory Structure
+        </button>
+    </form>
+    <div id="directoryStructure" class="mt-6"></div>
+    <button id="generateTextButton" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hidden flex items-center justify-center">
+        <i data-lucide="file-text" class="w-5 h-5 mr-2"></i>
+        Generate Text File
+    </button>
+    <textarea id="outputText" rows="20" class="mt-4 w-full p-2 border rounded-md font-mono" readonly></textarea>
+    <div class="mt-4 flex space-x-4">
+        <button id="copyButton" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hidden flex items-center justify-center">
+            <i data-lucide="copy" class="w-5 h-5 mr-2"></i>
+            Copy to Clipboard
+        </button>
+        <button id="downloadButton" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline hidden flex items-center justify-center">
+            <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+            Download
+        </button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
