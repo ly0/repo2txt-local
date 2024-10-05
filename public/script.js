@@ -1,13 +1,13 @@
-const ignoreSubpaths = [
+let ignoreSubpaths = [
     { value: '^\\.', label: '.' },
     { value: '.git', label: '.git' },
     { value: 'node_modules', label: 'node_modules' },
     { value: '.idea', label: '.idea' },
-    { value: 'dist', label: 'dist' },
+    { value: 'dist', label: 'dist' }
 
 ];
 
-const commonExtensions = [
+let commonExtensions = [
     { value: '.js', label: '.js' },
     { value: '.py', label: '.py' },
     { value: '.java', label: '.java' },
@@ -21,49 +21,102 @@ const commonExtensions = [
     { value: '.h', label: '.h' }
 ];
 
-
-// Add this function to generate checkboxes
 function generateCheckboxes(containerId, items, className, title) {
     const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Container with id ${containerId} not found`);
+        return;
+    }
     container.innerHTML = `
         <label class="block text-sm font-medium text-gray-600 mb-2">${title}:</label>
         <div class="grid grid-cols-3 gap-2">
             ${items.map(item => `
                 <label class="inline-flex items-center">
-                    <input type="checkbox" class="${className} form-checkbox h-5 w-5 text-blue-600" value="${item.value}" checked>
+                    <input type="checkbox" class="${className} form-checkbox h-5 w-5 text-blue-600" value="${item.value}" ${item.checked ? 'checked' : ''}>
                     <span class="ml-2 text-gray-700">${item.label}</span>
+                    ${!item.preset && className !== 'common-extension' ? `<button type="button" class="ml-2 text-red-500 delete-subpath" data-value="${item.value}">X</button>` : ''}
                 </label>
             `).join('')}
         </div>
     `;
+
+    // Add event listeners for delete buttons (only for ignore subpaths)
+    if (className === 'ignore-subpath') {
+        container.querySelectorAll('.delete-subpath').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const valueToRemove = this.getAttribute('data-value');
+                ignoreSubpaths = ignoreSubpaths.filter(item => item.value !== valueToRemove);
+                saveIgnoreSubpaths();
+                generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
+            });
+        });
+    }
 }
 
-
 function loadIgnoreSubpaths() {
-    const savedIgnoreSubpaths = JSON.parse(localStorage.getItem('ignoreSubpaths')) || ignoreSubpaths.map(item => item.value);
-    document.querySelectorAll('.ignore-subpath').forEach(checkbox => {
-        checkbox.checked = savedIgnoreSubpaths.includes(checkbox.value);
-    });
+    const savedIgnoreSubpaths = JSON.parse(localStorage.getItem('ignoreSubpaths'));
+
+    if (savedIgnoreSubpaths && savedIgnoreSubpaths.length > 0) {
+        // 用户之前有设置或勾选，使用保存的设置
+        ignoreSubpaths = ignoreSubpaths.map(item => {
+            const savedItem = savedIgnoreSubpaths.find(saved => saved.value === item.value);
+            return {
+                ...item,
+                checked: savedItem ? savedItem.checked : false
+            };
+        });
+
+        // 添加用户自定义的 subpaths
+        savedIgnoreSubpaths.forEach(saved => {
+            if (!ignoreSubpaths.some(item => item.value === saved.value)) {
+                ignoreSubpaths.push({...saved, preset: false});
+            }
+        });
+    } else {
+        // 用户从未设置过，预设的 subpaths 全选
+        ignoreSubpaths = ignoreSubpaths.map(item => ({...item, checked: true}));
+    }
+
+    generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
 }
 
 // Modify the loadCommonExtensions function
 function loadCommonExtensions() {
     const savedCommonExtensions = JSON.parse(localStorage.getItem('commonExtensions')) || commonExtensions.map(item => item.value);
-    document.querySelectorAll('.common-extension').forEach(checkbox => {
-        checkbox.checked = savedCommonExtensions.includes(checkbox.value);
+    commonExtensions.forEach(item => {
+        item.checked = savedCommonExtensions.includes(item.value);
     });
+    generateCheckboxes('common-extensions-container', commonExtensions, 'common-extension', 'Common file extensions');
 }
 
 function saveCommonExtensions() {
-    const commonExtensions = Array.from(document.querySelectorAll('.common-extension:checked')).map(cb => cb.value);
-    localStorage.setItem('commonExtensions', JSON.stringify(commonExtensions));
-    return commonExtensions;
+    const checkedExtensions = Array.from(document.querySelectorAll('.common-extension:checked')).map(cb => cb.value);
+    localStorage.setItem('commonExtensions', JSON.stringify(checkedExtensions));
+    return checkedExtensions;
 }
 
+// function saveIgnoreSubpaths() {
+//     const checkedSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked'))
+//         .map(cb => cb.value)
+//         .filter(value => value !== undefined);
+//     const savedSubpaths = ignoreSubpaths.filter(item => checkedSubpaths.includes(item.value));
+//     localStorage.setItem('ignoreSubpaths', JSON.stringify(savedSubpaths));
+//     return checkedSubpaths;
+// }
+
 function saveIgnoreSubpaths() {
-    const ignoreSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked')).map(cb => cb.value);
-    localStorage.setItem('ignoreSubpaths', JSON.stringify(ignoreSubpaths));
-    return ignoreSubpaths;
+    const checkedSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked')).map(cb => cb.value);
+    console.log('saveIgnoreSubpaths', checkedSubpaths);
+    const savedSubpaths = ignoreSubpaths.map(item => ({
+        value: item.value,
+        label: item.label,
+        preset: item.preset,
+        checked: checkedSubpaths.includes(item.value)
+    }));
+    console.log(savedSubpaths);
+    localStorage.setItem('ignoreSubpaths', JSON.stringify(savedSubpaths));
+    return checkedSubpaths;
 }
 
 
@@ -366,11 +419,28 @@ function sortContents(contents) {
 document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
 
-    generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
-    generateCheckboxes('common-extensions-container', commonExtensions, 'common-extension', 'Common file extensions');
-
     loadIgnoreSubpaths();
     loadCommonExtensions();
+
+
+    const addIgnoreSubpathButton = document.getElementById('add-ignore-subpath');
+    const newIgnoreSubpathInput = document.getElementById('new-ignore-subpath');
+
+    addIgnoreSubpathButton.addEventListener('click', function(e) {
+        e.preventDefault(); // Prevent form submission
+        const newSubpath = newIgnoreSubpathInput.value.trim();
+        if (newSubpath && !ignoreSubpaths.some(item => item.value === newSubpath)) {
+            ignoreSubpaths.push({
+                value: newSubpath,
+                label: newSubpath,
+                preset: false,
+                checked: true  // 设置为 true，使新添加的 subpath 默认选中
+            });
+            newIgnoreSubpathInput.value = '';
+            generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
+            saveIgnoreSubpaths();
+        }
+    });
 
     document.querySelectorAll('.common-extension').forEach(checkbox => {
         checkbox.addEventListener('change', saveCommonExtensions);
@@ -382,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener for the showMoreInfo button
     const showMoreInfoButton = document.getElementById('showMoreInfo');
-    const tokenInfo = document.getElementById('tokenInfo');
 
     showMoreInfoButton.addEventListener('click', function() {
         tokenInfo.classList.toggle('hidden');
