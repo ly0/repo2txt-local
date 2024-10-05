@@ -20,7 +20,6 @@ let commonExtensions = [
     { value: '.cc', label: '.cc' },
     { value: '.h', label: '.h' }
 ];
-
 function generateCheckboxes(containerId, items, className, title) {
     const container = document.getElementById(containerId);
     if (!container) {
@@ -34,24 +33,27 @@ function generateCheckboxes(containerId, items, className, title) {
                 <label class="inline-flex items-center">
                     <input type="checkbox" class="${className} form-checkbox h-5 w-5 text-blue-600" value="${item.value}" ${item.checked ? 'checked' : ''}>
                     <span class="ml-2 text-gray-700">${item.label}</span>
-                    ${!item.preset && className !== 'common-extension' ? `<button type="button" class="ml-2 text-red-500 delete-subpath" data-value="${item.value}">X</button>` : ''}
+                    ${!item.preset ? `<button type="button" class="ml-2 text-red-500 delete-item" data-value="${item.value}">X</button>` : ''}
                 </label>
             `).join('')}
         </div>
     `;
 
-    // Add event listeners for delete buttons (only for ignore subpaths)
-    if (className === 'ignore-subpath') {
-        container.querySelectorAll('.delete-subpath').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const valueToRemove = this.getAttribute('data-value');
+    container.querySelectorAll('.delete-item').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const valueToRemove = this.getAttribute('data-value');
+            if (className === 'ignore-subpath') {
                 ignoreSubpaths = ignoreSubpaths.filter(item => item.value !== valueToRemove);
                 saveIgnoreSubpaths();
                 generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
-            });
+            } else if (className === 'common-extension') {
+                commonExtensions = commonExtensions.filter(item => item.value !== valueToRemove);
+                saveCommonExtensions();
+                generateCheckboxes('common-extensions-container', commonExtensions, 'common-extension', 'Common file extensions');
+            }
         });
-    }
+    });
 }
 
 function loadIgnoreSubpaths() {
@@ -81,29 +83,33 @@ function loadIgnoreSubpaths() {
     generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
 }
 
-// Modify the loadCommonExtensions function
 function loadCommonExtensions() {
-    const savedCommonExtensions = JSON.parse(localStorage.getItem('commonExtensions')) || commonExtensions.map(item => item.value);
-    commonExtensions.forEach(item => {
-        item.checked = savedCommonExtensions.includes(item.value);
-    });
+    const savedExtensions = JSON.parse(localStorage.getItem('commonExtensions'));
+
+    if (savedExtensions && savedExtensions.length > 0) {
+        commonExtensions = commonExtensions.map(item => {
+            const savedItem = savedExtensions.find(saved => saved.value === item.value);
+            return {
+                ...item,
+                checked: savedItem ? savedItem.checked : false
+            };
+        });
+
+        savedExtensions.forEach(saved => {
+            if (!commonExtensions.some(item => item.value === saved.value)) {
+                commonExtensions.push({...saved, preset: false});
+            }
+        });
+    } else {
+        commonExtensions = commonExtensions.map(item => ({...item, checked: true}));
+    }
+
     generateCheckboxes('common-extensions-container', commonExtensions, 'common-extension', 'Common file extensions');
 }
 
 function saveCommonExtensions() {
-    const checkedExtensions = Array.from(document.querySelectorAll('.common-extension:checked')).map(cb => cb.value);
-    localStorage.setItem('commonExtensions', JSON.stringify(checkedExtensions));
-    return checkedExtensions;
+    localStorage.setItem('commonExtensions', JSON.stringify(commonExtensions));
 }
-
-// function saveIgnoreSubpaths() {
-//     const checkedSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked'))
-//         .map(cb => cb.value)
-//         .filter(value => value !== undefined);
-//     const savedSubpaths = ignoreSubpaths.filter(item => checkedSubpaths.includes(item.value));
-//     localStorage.setItem('ignoreSubpaths', JSON.stringify(savedSubpaths));
-//     return checkedSubpaths;
-// }
 
 function saveIgnoreSubpaths() {
     const checkedSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked')).map(cb => cb.value);
@@ -233,9 +239,11 @@ function displayDirectoryStructure(tree) {
         const li = document.createElement('li');
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        const commonExtensions = ['.js', '.py', '.java', '.cpp', '.html', '.css', '.ts', '.jsx', '.tsx', '.cc', '.h'];
+        // const commonExtensions = ['.js', '.py', '.java', '.cpp', '.html', '.css', '.ts', '.jsx', '.tsx', '.cc', '.h'];
+        const checkedExtensions = commonExtensions.filter(ext => ext.checked).map(ext => ext.value);
+
         const fileName = name.toLowerCase();
-        const isCommonFile = commonExtensions.some(ext => fileName.endsWith(ext));
+        const isCommonFile = checkedExtensions.some(ext => fileName.endsWith(ext));
         checkbox.checked = isCommonFile;
         checkbox.className = 'mr-2';
 
@@ -423,6 +431,37 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCommonExtensions();
 
 
+    const addCommonExtensionButton = document.getElementById('add-common-extension');
+    const newCommonExtensionInput = document.getElementById('new-common-extension');
+
+    addCommonExtensionButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('addCommonExtensionButton clicked');
+        const newExtension = newCommonExtensionInput.value.trim();
+        if (newExtension && !commonExtensions.some(item => item.value === newExtension)) {
+            commonExtensions.push({
+                value: newExtension,
+                label: newExtension,
+                preset: false,
+                checked: true
+            });
+            newCommonExtensionInput.value = '';
+            saveCommonExtensions();
+            generateCheckboxes('common-extensions-container', commonExtensions, 'common-extension', 'Common file extensions');
+        }
+    });
+
+    document.getElementById('common-extensions-container').addEventListener('change', function(e) {
+        if (e.target.classList.contains('common-extension')) {
+            const value = e.target.value;
+            const index = commonExtensions.findIndex(item => item.value === value);
+            if (index !== -1) {
+                commonExtensions[index].checked = e.target.checked;
+                saveCommonExtensions();
+            }
+        }
+    });
+
     const addIgnoreSubpathButton = document.getElementById('add-ignore-subpath');
     const newIgnoreSubpathInput = document.getElementById('new-ignore-subpath');
 
@@ -442,16 +481,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    document.querySelectorAll('.common-extension').forEach(checkbox => {
-        checkbox.addEventListener('change', saveCommonExtensions);
-    });
-
-    document.querySelectorAll('.ignore-subpath').forEach(checkbox => {
-        checkbox.addEventListener('change', saveIgnoreSubpaths);
-    });
 
     // Add event listener for the showMoreInfo button
-    const showMoreInfoButton = document.getElementById('showMoreInfo');
+    // const showMoreInfoButton = document.getElementById('showMoreInfo');
 
     showMoreInfoButton.addEventListener('click', function() {
         tokenInfo.classList.toggle('hidden');
