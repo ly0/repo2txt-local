@@ -54,6 +54,7 @@ app.get('/trees', async (req, res) => {
         res.json(tree);
     } catch (error) {
         res.status(500).send('Error building tree');
+        console.error(error);
     }
 });
 

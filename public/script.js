@@ -1,11 +1,64 @@
-// Add this function at the beginning of the file
+const ignoreSubpaths = [
+    { value: '^\\.', label: '.' },
+    { value: '.git', label: '.git' },
+    { value: 'node_modules', label: 'node_modules' },
+    { value: '.idea', label: '.idea' },
+    { value: 'dist', label: 'dist' },
+
+];
+
+const commonExtensions = [
+    { value: '.js', label: '.js' },
+    { value: '.py', label: '.py' },
+    { value: '.java', label: '.java' },
+    { value: '.cpp', label: '.cpp' },
+    { value: '.html', label: '.html' },
+    { value: '.css', label: '.css' },
+    { value: '.ts', label: '.ts' },
+    { value: '.jsx', label: '.jsx' },
+    { value: '.tsx', label: '.tsx' },
+    { value: '.cc', label: '.cc' },
+    { value: '.h', label: '.h' }
+];
+
+
+// Add this function to generate checkboxes
+function generateCheckboxes(containerId, items, className, title) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = `
+        <label class="block text-sm font-medium text-gray-600 mb-2">${title}:</label>
+        <div class="grid grid-cols-3 gap-2">
+            ${items.map(item => `
+                <label class="inline-flex items-center">
+                    <input type="checkbox" class="${className} form-checkbox h-5 w-5 text-blue-600" value="${item.value}" checked>
+                    <span class="ml-2 text-gray-700">${item.label}</span>
+                </label>
+            `).join('')}
+        </div>
+    `;
+}
+
+
 function loadIgnoreSubpaths() {
-    const ignoreSubpaths = JSON.parse(localStorage.getItem('ignoreSubpaths')) || ['.git', 'node_modules', '.idea'];
+    const savedIgnoreSubpaths = JSON.parse(localStorage.getItem('ignoreSubpaths')) || ignoreSubpaths.map(item => item.value);
     document.querySelectorAll('.ignore-subpath').forEach(checkbox => {
-        checkbox.checked = ignoreSubpaths.includes(checkbox.value);
+        checkbox.checked = savedIgnoreSubpaths.includes(checkbox.value);
     });
 }
 
+// Modify the loadCommonExtensions function
+function loadCommonExtensions() {
+    const savedCommonExtensions = JSON.parse(localStorage.getItem('commonExtensions')) || commonExtensions.map(item => item.value);
+    document.querySelectorAll('.common-extension').forEach(checkbox => {
+        checkbox.checked = savedCommonExtensions.includes(checkbox.value);
+    });
+}
+
+function saveCommonExtensions() {
+    const commonExtensions = Array.from(document.querySelectorAll('.common-extension:checked')).map(cb => cb.value);
+    localStorage.setItem('commonExtensions', JSON.stringify(commonExtensions));
+    return commonExtensions;
+}
 
 function saveIgnoreSubpaths() {
     const ignoreSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked')).map(cb => cb.value);
@@ -312,7 +365,16 @@ function sortContents(contents) {
 
 document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
+
+    generateCheckboxes('ignore-subpaths-container', ignoreSubpaths, 'ignore-subpath', 'Ignore subpaths');
+    generateCheckboxes('common-extensions-container', commonExtensions, 'common-extension', 'Common file extensions');
+
     loadIgnoreSubpaths();
+    loadCommonExtensions();
+
+    document.querySelectorAll('.common-extension').forEach(checkbox => {
+        checkbox.addEventListener('change', saveCommonExtensions);
+    });
 
     document.querySelectorAll('.ignore-subpath').forEach(checkbox => {
         checkbox.addEventListener('change', saveIgnoreSubpaths);
