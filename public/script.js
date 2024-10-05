@@ -22,6 +22,7 @@ let commonExtensions = [
 ];
 function generateCheckboxes(containerId, items, className, title) {
     const container = document.getElementById(containerId);
+    console.log('generateCheckboxes', containerId, items, className, title);
     if (!container) {
         console.error(`Container with id ${containerId} not found`);
         return;
@@ -32,7 +33,7 @@ function generateCheckboxes(containerId, items, className, title) {
             ${items.map(item => `
                 <label class="inline-flex items-center">
                     <input type="checkbox" class="${className} form-checkbox h-5 w-5 text-blue-600" value="${item.value}" ${item.checked ? 'checked' : ''}>
-                    <span class="ml-2 text-gray-700">${item.label}</span>
+                    <span class="ml-2 ${item.preset !== false ? 'text-gray-700' : 'text-blue-500 font-bold'}">${item.label}</span>
                     ${!item.preset ? `<button type="button" class="ml-2 text-red-500 delete-item" data-value="${item.value}">X</button>` : ''}
                 </label>
             `).join('')}
