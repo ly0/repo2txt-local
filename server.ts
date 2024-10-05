@@ -25,7 +25,6 @@ const argv = yargs(hideBin(process.argv))
     .parse();
 
 const ROOT_PATH = path.resolve(argv.path);
-console.log(`Serving files from: ${argv.path}`);
 const PORT = argv.port;
 
 // Serve static files
@@ -48,15 +47,17 @@ app.get('/trees', async (req, res) => {
     try {
         const requestedPath = (req.query.path as string) || '';
         const fullPath = path.join(ROOT_PATH, requestedPath);
-        const tree = await buildTree(fullPath, requestedPath);
+        const ignoreList = JSON.parse(req.query.ignore as string) || [];
+        const ignoreRegexList = ignoreList.map((pattern: string) => pattern === '.' ? /^\./ : new RegExp(pattern));
+        console.log('ignoreRegexList', ignoreRegexList);
+        const tree = await buildTree(fullPath, requestedPath, ignoreRegexList);
         res.json(tree);
     } catch (error) {
         res.status(500).send('Error building tree');
-        console.error(error);
     }
 });
 
-async function buildTree(dir: string, requestedPath: string): Promise<any> {
+async function buildTree(dir: string, requestedPath: string, ignoreRegexList: RegExp[]): Promise<any> {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     const tree: any = {
         url: `/trees?path=${encodeURIComponent(requestedPath)}`,
@@ -68,10 +69,15 @@ async function buildTree(dir: string, requestedPath: string): Promise<any> {
     async function processEntry(entry: fsSync.Dirent, currentPath: string) {
         const fullPath = path.join(dir, entry.name);
         const relativePath = path.relative(basePath, fullPath);
-        const entryPath = relativePath.replace(/^\/+/, '');
+        const entryPath = relativePath.replace(/^\/+/g, '');
+
+        // Skip directories/files matching any pattern in the ignore list
+        if (ignoreRegexList.some(regex => regex.test(entry.name))) {
+            return;
+        }
 
         if (entry.isDirectory()) {
-            const subTree = await buildTree(fullPath, path.join(requestedPath, entry.name));
+            const subTree = await buildTree(fullPath, path.join(requestedPath, entry.name), ignoreRegexList);
             tree.tree.push({
                 path: entryPath,
                 type: 'tree',
@@ -101,7 +107,6 @@ async function buildTree(dir: string, requestedPath: string): Promise<any> {
 
     return tree;
 }
-
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

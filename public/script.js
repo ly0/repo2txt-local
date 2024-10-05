@@ -1,3 +1,19 @@
+// Add this function at the beginning of the file
+function loadIgnoreSubpaths() {
+    const ignoreSubpaths = JSON.parse(localStorage.getItem('ignoreSubpaths')) || ['.git', 'node_modules', '.idea'];
+    document.querySelectorAll('.ignore-subpath').forEach(checkbox => {
+        checkbox.checked = ignoreSubpaths.includes(checkbox.value);
+    });
+}
+
+
+function saveIgnoreSubpaths() {
+    const ignoreSubpaths = Array.from(document.querySelectorAll('.ignore-subpath:checked')).map(cb => cb.value);
+    localStorage.setItem('ignoreSubpaths', JSON.stringify(ignoreSubpaths));
+    return ignoreSubpaths;
+}
+
+
 document.getElementById('repoForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const path = document.getElementById('path').value || '';
@@ -60,7 +76,8 @@ document.getElementById('downloadButton').addEventListener('click', function () 
 });
 
 async function fetchRepoTree(path = '') {
-    const url = `/trees?path=${encodeURIComponent(path)}`;
+    const ignoreSubpaths = saveIgnoreSubpaths();
+    const url = `/trees?path=${encodeURIComponent(path)}&ignore=${encodeURIComponent(JSON.stringify(ignoreSubpaths))}`;
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`Failed to fetch directory tree. Status: ${response.status}. Please check your input and try again.`);
@@ -110,7 +127,7 @@ function displayDirectoryStructure(tree) {
         const li = document.createElement('li');
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        const commonExtensions = ['.js', '.py', '.java', '.cpp', '.html', '.css', '.ts', '.jsx', '.tsx'];
+        const commonExtensions = ['.js', '.py', '.java', '.cpp', '.html', '.css', '.ts', '.jsx', '.tsx', '.cc', '.h'];
         const fileName = name.toLowerCase();
         const isCommonFile = commonExtensions.some(ext => fileName.endsWith(ext));
         checkbox.checked = isCommonFile;
@@ -295,6 +312,11 @@ function sortContents(contents) {
 
 document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
+    loadIgnoreSubpaths();
+
+    document.querySelectorAll('.ignore-subpath').forEach(checkbox => {
+        checkbox.addEventListener('change', saveIgnoreSubpaths);
+    });
 
     // Add event listener for the showMoreInfo button
     const showMoreInfoButton = document.getElementById('showMoreInfo');
